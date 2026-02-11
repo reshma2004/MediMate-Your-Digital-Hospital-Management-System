@@ -32,7 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = authHeader.substring(7);
             try {
                 String username = jwtUtil.validateAndGetUsername(token);
-                // Extract roles from token using JwtUtil
+                
                 List<String> roles = jwtUtil.getRolesFromToken(token);
                 List<SimpleGrantedAuthority> authorities = roles.stream()
                     .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
@@ -41,9 +41,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken authentication = 
                     new UsernamePasswordAuthenticationToken(username, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+
             } catch (Exception e) {
-                // Token invalid
-                
+                SecurityContextHolder.clearContext();
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{ \"error\": \"Invalid Token\", \"message\": \"" + e.getMessage() + "\" }");
+                return; 
+
             }
         }
         filterChain.doFilter(request, response);
